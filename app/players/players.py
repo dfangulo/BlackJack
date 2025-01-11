@@ -71,7 +71,7 @@ class Players:
         for player in self.players_list:
             player.hand_card = []
             player.status = "reset"
-            player.score_hand()
+            player.calculate_score_hand()
             
 class TheHouse(Players):
     players_list: list[Player] = []

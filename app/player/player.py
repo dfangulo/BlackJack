@@ -10,6 +10,8 @@ class Player:
         self.hand_card: list[Card] = []
         self.score: int = 0
         self.status: str = "play"
+        self.reward: bool = False
+        self.chip_bet:str = "color"
         self.chips: list[(Coin, int),] = []
 
     def player_name(self) -> str:
@@ -30,7 +32,7 @@ class Player:
     def add_card_to_hand(self, card: Card) -> None:
         self.hand_card.append(card)
 
-    def score_hand(self) -> None:
+    def calculate_score_hand(self) -> None:
         self.score = 0
         for card in self.hand_card:
             self.score += card.score if card.hide == False else self.score

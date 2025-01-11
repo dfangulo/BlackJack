@@ -37,10 +37,12 @@ class Game21:
                         self.menu.clear_screen()
                         for player in Players.players_list:
                             player.status = (
-                                "BlackJack!" if player.score == 21 else player.status
+                                "BlackJack!"
+                                if player.score == 21 and self.round == 0
+                                else player.status
                             )
                             player.status = (
-                                "Looser" if player.score > 21 else player.status
+                                "Lose!" if player.score > 21 else player.status
                             )
                             if player.status == "play_round" and player.score < 21:
                                 # Acciones específicas por jugador
@@ -101,6 +103,7 @@ class Game21:
                 )  # Efficient coin selection
                 # Apuesta de dos fichas
                 how_many_chips: int = 2
+                player.chip_bet = selected_coin.color
                 player.update_coins(selected_coin, quantity=-how_many_chips)
                 print(f"Se apuestan de 2 fichas {selected_coin.color}")
                 new_card: Card = self.deck.deal_card()
@@ -115,7 +118,7 @@ class Game21:
     def player_play(self, player: Player = None) -> None:
         # Comenzar la partida
         # se repartes dos cartas por jugador y 2 para el dealer(Crupier)
-        player.score_hand()
+        player.calculate_score_hand()
         print(
             f"\nRonda: {self.round} Turno de: {" ".join(player.name.center(20, "*"))}\n"
         )
@@ -132,7 +135,7 @@ class Game21:
                 new_card: Card = self.deck.deal_card()
                 new_card.is_as(player.score, round=self.round)
                 player.add_card_to_hand(new_card)
-                player.score_hand()
+                player.calculate_score_hand()
             if user_selection == "2":
                 player.status = "stand"
             if user_selection == "2":
@@ -181,18 +184,21 @@ class Game21:
         finally:
             print("\n")
 
-    def is_winner(self, player_score: int = 0, crupier_score: int = 0) -> None:
-        if player_score == 21 and crupier_score <= 20:
-            input("Black Jack!")
-            return "blackjack"
-        elif crupier_score > player_score <= 21:
-            return "winner"
+    def is_winner(self, crupier_score, player_score) -> tuple[bool, str, int]:
+        if player_score == 21 and crupier_score < 21:
+            return True, "BlackJack!", 5
+        elif (
+            player_score <= 21 and crupier_score <= 21 and player_score == crupier_score
+        ):
+            return True, "Draw!", 2
+        elif player_score <= 21 and (
+            crupier_score > 21 or player_score > crupier_score
+        ):
+            return True, "Winner!", 4
         elif player_score > 21:
-            input("Perdiste!")
-            return "looser"
+            return False, "Lose!", 0
         else:
-            print("Continua Jugando")
-            return "play"
+            return False, "No result!", 0  # Para casos no contemplados
 
     def crupier_end_game(self) -> None:
         self.menu.clear_screen()
@@ -204,20 +210,26 @@ class Game21:
             # Revisar si hay un AS en la mano del crupier y mostar las cartas
             self.menu.display_player_hand(player=crupier)  # mostrar cartas
             for card in crupier.hand_card:  # iniciar el loop de cartas
-                crupier.score_hand()
                 card.is_as(crupier.score, round=self.round)  # Revisar si es un AS
-
+            crupier.calculate_score_hand()
+            # --Loop para finalizar las partidas hasta obtener hasta 17 maximo
             while crupier.score <= 17:
-                crupier.score_hand()
-                self.menu.animation_wait(0.6)
                 new_card: Card = self.deck.deal_card()
                 new_card.is_as(crupier.score, round=self.round)
                 crupier.add_card_to_hand(new_card)
-                crupier.score_hand()
                 self.round += 1
+                self.menu.animation_wait(0.6)
+                crupier.calculate_score_hand()
+                crupier_score_num: int = crupier.score
             self.menu.show_cards_game(
                 house=self.house, players=self.players, round=self.round
             )
+            for player in self.players.players_list:
+                reward, status, reward_chips = self.is_winner(
+                    player_score=player.score, crupier_score=crupier_score_num
+                )
+                print(f"Jugador: {player.name}, {reward}, {status}, {player.chip_bet} - {reward_chips}")
+                input()
 
     def crupier_init_game(self) -> None:
         print("Iniciando mesa =>")

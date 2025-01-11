@@ -40,11 +40,11 @@ class Menu:
     def show_cards_game(self, house: Players, players: Players, round: int = 0) -> None:
         print(f"Ronda [{round}]\n")
         for crupier in house.players_list:
-            crupier.score_hand()
+            crupier.calculate_score_hand()
             print(f"\tCartas de la mesa puntuacion {crupier.score}: ")
             self.display_player_hand(crupier)
         for player in players.players_list:
-            player.score_hand()
+            player.calculate_score_hand()
             # Asegúrate de definir cómo obtener el color del objeto Coin
             formatted_chips = ", ".join(f"({coin.color}, {value})" for coin, value in player.chips)
             # Luego, usa esto en tu `print`
