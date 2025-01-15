@@ -19,7 +19,9 @@ class Game21:
     def run(self) -> None:
         self.menu.animation_wait(1.5)
         self.menu.show_menu()
-        
+        self.menu_game()
+
+    def menu_game(self) -> None:
         option_menu_game: str = self.menu.show_start_options().lower() # Mostrar opciones de inicio, y recibe la respuesta
         if option_menu_game.lower() == "salir juego":
             print("Saliendo del juego")
@@ -27,11 +29,18 @@ class Game21:
             exit()
         elif option_menu_game == "iniciar juego":
             if self.check_for_players():
+                self.menu.animation_wait(1.8)            
+                self.ask_play_round()
                 return self.play_game()
             else:
-                input("No hay jugadores para la ronda")
-                self.create_players()
-                return self.run()
+                if len(self.players.players_list) < 0:
+                    self.ask_play_round()
+                    return self.play_game()
+                else:
+                    print("No hay jugadores para la ronda, create algunos")
+                    self.menu.animation_wait(1.8)
+                    self.create_players()
+                    return self.run()
         elif option_menu_game == "agregar jugadores":
             self.create_players()
             return self.run()
@@ -46,13 +55,12 @@ class Game21:
             return self.run()            
         else:
             input("Opción no válida, vuelve a intentarlo")
-            self.menu.animation_wait(1.8)
+            self.menu.animation_wait(1.8)  
+            return self.run()      
             
     def play_game(self) -> None:
         if any(player.status == "play_round" for player in Players.players_list):
-            print("Vamos a jugar!")
             while True:
-                self.ask_play_round()
                 if self.check_for_players():
                     if self.round == 0:
                         self.crupier_init_game()
@@ -92,8 +100,9 @@ class Game21:
                             for playe_r in self.players.players_list
                         )
                         input(status_players)
+                        return self.play_game()
                     else:
-                        break
+                        return self.run()
                 else:
                     print("No hay jugadores para la ronda")
                     print("Reiniciando la ronda.")
@@ -147,7 +156,9 @@ class Game21:
                 input("No se contesto afirmativamente, el jugador no entra en la ronda")
 
     def check_for_players(self) -> None:
-        return any(player.status == "play_round" for player in Players.players_list)
+        if len(self.players.players_list) > 0:
+            return True
+        return False
 
     def player_play(self, player: Player = None) -> None:
         # Comenzar la partida
@@ -213,6 +224,8 @@ class Game21:
                     else:
                         # Nombre generico
                         self.players.create_new_player(((f"player_{_ + 1}", wallet),))
+                    self.menu.animation_wait(0.5)
+                self.buy_chips()
 
         except Exception as e:
             input(f"No se introduzco una valor válido: {str(e)}")

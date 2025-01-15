@@ -15,7 +15,7 @@ class Menu:
         self.clear_screen()
         print("\n" * 4, "Black Jack!".center(80), "\n" * 2)
 
-    def show_start_options(self) -> None:
+    def show_start_options(self) -> str:
         print(
             """
             1 => Iniciar Juego (enter)
@@ -27,8 +27,6 @@ class Menu:
             """
         )
         answer = input("Seleccione una opción: ").strip().lower()
-        if answer == "q": 
-            return "Salir Juego"
         if answer == "1":
             return "Iniciar Juego"
         elif answer == "2":
@@ -43,10 +41,11 @@ class Menu:
             return "Salir Juego"
         
 
-    def user_options(self, player: Player, round: int = 0) -> None:
+    def user_options(self, player: Player, round: int = 0) -> str:
         print(
             f"""
-    Ronda: {round} Turno de: {" ".join(player.name.center(20, "*"))}
+{" ".join(player.name.center(40, "*"))}
+    Ronda: {round}
               
               1 => Pedir Cartas
               2 => Plantarse
@@ -58,7 +57,7 @@ class Menu:
               """
         )
         self.display_player_hand(player)
-        return input(f"{player.name} Selección: ")
+        return input(f"{player.name} Selección: ").lower().strip()
 
     def show_cards_game(self, house: Players, players: Players, round: int = 0) -> None:
         print(f"Ronda [{round}]\n")
