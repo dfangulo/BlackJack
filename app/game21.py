@@ -11,6 +11,7 @@ class Game21:
     menu: Menu = Menu()
     deck: Deck = Deck()
     round: int = 0
+    crupier_final_score: int = 0
 
     def __init__(self) -> None:
         self.run()
@@ -18,13 +19,38 @@ class Game21:
     def run(self) -> None:
         self.menu.animation_wait(1.5)
         self.menu.show_menu()
-        self.menu.show_start_options()
-        start_game: str = input("select: ").strip().lower()
-        if start_game == "q":
+        
+        option_menu_game: str = self.menu.show_start_options().lower() # Mostrar opciones de inicio, y recibe la respuesta
+        if option_menu_game.lower() == "salir juego":
+            print("Saliendo del juego")
+            self.menu.animation_wait(1.8)
             exit()
-        else:
-            print("Vamos a jugar!")
+        elif option_menu_game == "iniciar juego":
+            if self.check_for_players():
+                return self.play_game()
+            else:
+                input("No hay jugadores para la ronda")
+                self.create_players()
+                return self.run()
+        elif option_menu_game == "agregar jugadores":
             self.create_players()
+            return self.run()
+        elif option_menu_game == "comprar monedas":
+            self.buy_chips()
+            return self.run()
+        elif option_menu_game == "cambiar monedas":
+            self.sale_chips()
+            return self.run()
+        elif option_menu_game == "eliminar jugador":
+            self.players.remove_player()
+            return self.run()            
+        else:
+            input("Opción no válida, vuelve a intentarlo")
+            self.menu.animation_wait(1.8)
+            
+    def play_game(self) -> None:
+        if any(player.status == "play_round" for player in Players.players_list):
+            print("Vamos a jugar!")
             while True:
                 self.ask_play_round()
                 if self.check_for_players():
@@ -38,7 +64,9 @@ class Game21:
                         for player in Players.players_list:
                             player.status = (
                                 "BlackJack!"
-                                if player.score == 21 and self.round == 0
+                                if self.is_blackjack(
+                                    player=player
+                                )  # Revisar si este jugador ya ganó con 2 cartas
                                 else player.status
                             )
                             player.status = (
@@ -49,6 +77,11 @@ class Game21:
                                 self.player_play(player=player)
                             else:
                                 pass
+
+                        self.players.show_players_info()
+                        self.menu.show_cards_game(
+                            house=self.house, players=self.players, round=self.round
+                        )
                         self.round += 1
                     self.crupier_end_game()
                     new_round = input("Volver a comenzar?")
@@ -107,6 +140,7 @@ class Game21:
                 player.update_coins(selected_coin, quantity=-how_many_chips)
                 print(f"Se apuestan de 2 fichas {selected_coin.color}")
                 new_card: Card = self.deck.deal_card()
+                new_card.is_as(player.score, round=self.round)
                 player.add_card_to_hand(new_card)
             else:
                 player.status = "no_play_round"
@@ -119,17 +153,10 @@ class Game21:
         # Comenzar la partida
         # se repartes dos cartas por jugador y 2 para el dealer(Crupier)
         player.calculate_score_hand()
-        print(
-            f"\nRonda: {self.round} Turno de: {" ".join(player.name.center(20, "*"))}\n"
-        )
         if self.round == 0:
             user_selection = "1"
         else:
-            self.players.show_players_info()
-            self.menu.show_cards_game(
-                house=self.house, players=self.players, round=self.round
-            )
-            user_selection = self.menu.user_options(player_name=player.name)
+            user_selection = self.menu.user_options(player=player, round=self.round)
         if user_selection in ["1", "2", "3", "4"]:
             if user_selection == "1":
                 new_card: Card = self.deck.deal_card()
@@ -150,6 +177,15 @@ class Game21:
             while True:
                 print(f"Jugador {player.name}")
                 self.house.sale_chips(player=player)
+                self.players.show_players_info()
+                if player.status != "buying_chips":
+                    break
+
+    def sale_chips(self) -> None:
+        for player in self.players.players_list:
+            while True:
+                print(f"Jugador {player.name}")
+                self.house.sale_chips(player=player, sale=True)
                 self.players.show_players_info()
                 if player.status != "buying_chips":
                     break
@@ -184,18 +220,18 @@ class Game21:
         finally:
             print("\n")
 
-    def is_winner(self, crupier_score, player_score) -> tuple[bool, str, int]:
-        if player_score == 21 and crupier_score < 21:
+    def is_winner(self, crupier: Player, player: Player) -> tuple[bool, str, int]:
+        if player.score == 21 and crupier.score < 21 and len(player.hand_card) == 2:
             return True, "BlackJack!", 5
         elif (
-            player_score <= 21 and crupier_score <= 21 and player_score == crupier_score
+            player.score <= 21 and crupier.score <= 21 and player.score == crupier.score
         ):
             return True, "Draw!", 2
-        elif player_score <= 21 and (
-            crupier_score > 21 or player_score > crupier_score
+        elif player.score <= 21 and (
+            crupier.score > 21 or player.score > crupier.score
         ):
             return True, "Winner!", 4
-        elif player_score > 21:
+        elif player.score > 21:
             return False, "Lose!", 0
         else:
             return False, "No result!", 0  # Para casos no contemplados
@@ -214,21 +250,27 @@ class Game21:
             crupier.calculate_score_hand()
             # --Loop para finalizar las partidas hasta obtener hasta 17 maximo
             while crupier.score <= 17:
+                self.menu.show_cards_game(
+                    house=self.house, players=self.players, round=self.round
+                )
                 new_card: Card = self.deck.deal_card()
                 new_card.is_as(crupier.score, round=self.round)
                 crupier.add_card_to_hand(new_card)
                 self.round += 1
                 self.menu.animation_wait(0.6)
                 crupier.calculate_score_hand()
-                crupier_score_num: int = crupier.score
+                self.crupier_final_score = crupier.score
             self.menu.show_cards_game(
                 house=self.house, players=self.players, round=self.round
             )
             for player in self.players.players_list:
                 reward, status, reward_chips = self.is_winner(
-                    player_score=player.score, crupier_score=crupier_score_num
+                    player=player,
+                    crupier=crupier,
                 )
-                print(f"Jugador: {player.name}, {reward}, {status}, {player.chip_bet} - {reward_chips}")
+                print(
+                    f"Jugador: {player.name}, {reward}, {status}, {player.chip_bet} - {reward_chips}"
+                )
                 input()
 
     def crupier_init_game(self) -> None:
@@ -245,5 +287,19 @@ class Game21:
     def reset_game(self) -> None:
         self.round = 0
         self.deck.reset_deck()
-        self.players.reset_hand_and_score()
         self.house.reset_hand_and_score()
+        self.players.reset_hand_and_score()
+
+    def is_blackjack(self, player: Player) -> bool:
+        """Check if the player's first two cards are a blackjack."""
+        if len(player.hand_card) == 2:
+            card_values = [card.score for card in player.hand_card]
+            return 10 in card_values and 11 in card_values
+        return False
+
+    def remove_player(self) -> None:
+        """Función para listar los jugadores y eliminarlos."""
+        self.players.show_players_info()
+        index_player: int = int(input("Indice del jugador a eliminar: "))
+        if index_player < len(self.players.players_list):
+            self.players.delete_player_by_index(index=index_player)

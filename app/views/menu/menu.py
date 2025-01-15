@@ -18,24 +18,47 @@ class Menu:
     def show_start_options(self) -> None:
         print(
             """
-            Iniciar Juego (enter)
-            Salir Juego (q)
+            1 => Iniciar Juego (enter)
+            2 => Agregar Jugadores
+            3 => Comprar monedas
+            4 => Cambiar monedas
+            5 => Eliminar Jugador
+            6 => Salir Juego 
             """
         )
+        answer = input("Seleccione una opción: ").strip().lower()
+        if answer == "q": 
+            return "Salir Juego"
+        if answer == "1":
+            return "Iniciar Juego"
+        elif answer == "2":
+            return "Agregar Jugadores"
+        elif answer == "3":
+            return "Comprar monedas"
+        elif answer == "4":
+            return "Cambiar monedas"
+        elif answer == "5":
+            return "Eliminar Jugador"
+        elif answer == "6":
+            return "Salir Juego"
+        
 
-    def user_options(self, player_name) -> None:
+    def user_options(self, player: Player, round: int = 0) -> None:
         print(
-            """
+            f"""
+    Ronda: {round} Turno de: {" ".join(player.name.center(20, "*"))}
               
               1 => Pedir Cartas
               2 => Plantarse
               3 => Retirarse
               4 => Seguro
               
+              Puntos: {player.score}
               
               """
         )
-        return input(f"{player_name} Selección: ")
+        self.display_player_hand(player)
+        return input(f"{player.name} Selección: ")
 
     def show_cards_game(self, house: Players, players: Players, round: int = 0) -> None:
         print(f"Ronda [{round}]\n")
@@ -46,9 +69,12 @@ class Menu:
         for player in players.players_list:
             player.calculate_score_hand()
             # Asegúrate de definir cómo obtener el color del objeto Coin
-            formatted_chips = ", ".join(f"({coin.color}, {value})" for coin, value in player.chips)
-            # Luego, usa esto en tu `print`
-            print(f"\tCartas {player.name} Puntuación {player.score}, fichas restantes: [{formatted_chips}]:")
+            formatted_chips = ", ".join(
+                f"({coin.color}, {value})" for coin, value in player.chips
+            )
+            print(
+                f"\tCartas {player.name} Puntuación {player.score}, fichas restantes: [{formatted_chips}]:"
+            )
             self.display_player_hand(player)
 
     def display_player_hand(self, player: Player):

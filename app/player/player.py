@@ -9,7 +9,7 @@ class Player:
         self.wallet: Wallet = Wallet(player_name=name, funds=wallet_founds)
         self.hand_card: list[Card] = []
         self.score: int = 0
-        self.status: str = "play"
+        self.status: str = "play_round"
         self.reward: bool = False
         self.chip_bet:str = "color"
         self.chips: list[(Coin, int),] = []

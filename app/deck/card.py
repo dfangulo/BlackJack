@@ -43,7 +43,7 @@ class Card:
     def is_as(self, total_score, round) -> str:
         try:
             if self.score == 1:
-                self.score = 11 if total_score + 11 <= 21 and round == 0 else self.score
+                self.score = 11 if total_score + 11 <= 21 or round in [0, 1] else self.score
         except:
             pass
 

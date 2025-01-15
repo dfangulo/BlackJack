@@ -70,7 +70,7 @@ class Players:
     def reset_hand_and_score(self)->None:
         for player in self.players_list:
             player.hand_card = []
-            player.status = "reset"
+            player.status = "Play"
             player.calculate_score_hand()
             
 class TheHouse(Players):
